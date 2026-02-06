@@ -1,6 +1,16 @@
 // src/components/CosmicRecipeWidget.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { fetchAstrologicalRecipes, resetCircuitBreaker } from '../services/astrologyApi';
+import { fetchAstrologicalRecipes, resetCircuitBreaker, Recipe } from '../services/astrologyApi';
+
+interface SavedChartData {
+  year: number;
+  month: number;
+  day: number;
+  time: string;
+  latitude: number;
+  longitude: number;
+}
+
 
 const ConstellationLoader = () => (
     <div className="relative w-full h-24 flex items-center justify-center">
@@ -17,8 +27,73 @@ const ConstellationLoader = () => (
     </div>
 );
 
-const CosmicRecipeWidget: React.FC = () => {
+// Helper to get current Chaldean Planetary Hour Ruler for Forest Hills (America/New_York)
+const getChaldeanPlanetaryHour = () => {
+  const now = new Date();
+  // For simplicity, we'll use a fixed offset for America/New_York, or could use an Intl.DateTimeFormat
+  // However, getting accurate timezone-aware *local* hour based on current date is tricky without a lib.
+  // For now, let's assume the server is in the correct timezone or a simple offset.
+  // A robust solution would involve a library like 'luxon' or 'moment-timezone'.
+  const options: Intl.DateTimeFormatOptions = {
+    hour: 'numeric',
+    weekday: 'long',
+    timeZone: 'America/New_York'
+  };
+  const dateInNY = new Intl.DateTimeFormat('en-US', options).formatToParts(now);
+
+  let hour: number = 0;
+  let weekday: string = '';
+
+  for (const part of dateInNY) {
+    if (part.type === 'hour') {
+      hour = parseInt(part.value, 10);
+      // Adjust for 12-hour format potentially returned by 'numeric' hour if not careful.
+      // For simplicity, assuming 24-hour format after parsing, or will manually convert.
+      // A more reliable way:
+      const hour24 = new Intl.DateTimeFormat('en-US', { hour: '2-digit', hourCycle: 'h23', timeZone: 'America/New_York' }).format(now);
+      hour = parseInt(hour24, 10);
+    }
+    if (part.type === 'weekday') {
+      weekday = part.value;
+    }
+  }
+
+  const planetaryOrder = ['Saturn', 'Jupiter', 'Mars', 'Sun', 'Venus', 'Mercury', 'Moon'];
+
+  // Starting ruler for each day (first hour of the day)
+  const dayRulers: { [key: string]: string } = {
+    'Sunday': 'Sun',
+    'Monday': 'Moon',
+    'Tuesday': 'Mars',
+    'Wednesday': 'Mercury',
+    'Thursday': 'Jupiter',
+    'Friday': 'Venus',
+    'Saturday': 'Saturn',
+  };
+
+  const startRuler = dayRulers[weekday];
+  if (!startRuler) return 'Unknown';
+
+  const startIndex = planetaryOrder.indexOf(startRuler);
+  if (startIndex === -1) return 'Unknown';
+
+  // Chaldean hours start from sunrise, but for simplification, we use current hour.
+  // The sequence repeats every 7 hours.
+  const rulerIndex = (startIndex + hour) % 7;
+
+  return planetaryOrder[rulerIndex];
+};
+
+
+interface CosmicRecipeWidgetProps {
+  savedChart?: SavedChartData;
+}
+
+const CosmicRecipeWidget: React.FC<CosmicRecipeWidgetProps> = ({ savedChart }) => {
     const [birthData, setBirthData] = useState(() => {
+        if (savedChart) {
+            return savedChart;
+        }
         const savedLat = localStorage.getItem('userLatitude');
         const savedLon = localStorage.getItem('userLongitude');
         return {
@@ -30,7 +105,7 @@ const CosmicRecipeWidget: React.FC = () => {
             longitude: savedLon ? parseFloat(savedLon) : -118.2437,
         };
     });
-    const [recipes, setRecipes] = useState<any>(null);
+    const [recipes, setRecipes] = useState<Recipe | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showRecipes, setShowRecipes] = useState(false);
@@ -148,6 +223,43 @@ const CosmicRecipeWidget: React.FC = () => {
             {recipes && (
                 <div className={`mt-4 p-4 border border-amber-400 rounded transition-opacity duration-500 ${showRecipes ? 'opacity-100' : 'opacity-0'}`}>
                     <h3 className="text-xl font-bold mb-2">Your Cosmic Recipes:</h3>
+                    {/* Chaldean Planetary Hour Ruler */}
+                    <div className="mb-4">
+                        <p className="text-lg font-bold">Current Planetary Hour Ruler:</p>
+                        <p className="text-amber-300 text-2xl">{getChaldeanPlanetaryHour()}</p>
+                    </div>
+
+                    {/* Potency Meter */}
+                    <div className="mb-4">
+                        <p className="text-lg font-bold">Total Potency Score:</p>
+                        <div className="w-full bg-gray-700 rounded-full h-4 mb-2">
+                            <div
+                                className={`bg-amber-400 h-4 rounded-full ${recipes.totalPotencyScore > 150 ? 'shadow-glow' : ''}`} // Assuming 'shadow-glow' is a defined CSS class
+                                style={{ width: `${Math.min(recipes.totalPotencyScore, 100)}%` }} // Cap at 100% for display
+                            ></div>
+                        </div>
+                        <p className="text-sm text-right">{recipes.totalPotencyScore.toFixed(2)}%</p>
+                    </div>
+
+                    {/* Elemental Balance Bar */}
+                    <div className="mb-4">
+                        <p className="text-lg font-bold">Alchemical Quantities:</p>
+                        <div className="flex flex-col space-y-1">
+                            {Object.entries(recipes.alchemical_quantities).map(([key, value]) => (
+                                <div key={key} className="flex items-center">
+                                    <span className="w-24 capitalize">{key}:</span>
+                                    <div className="flex-grow bg-gray-700 rounded-full h-3">
+                                        <div
+                                            className="bg-purple-400 h-3 rounded-full"
+                                            style={{ width: `${Math.min(value as number, 100)}%` }} // Assuming values are percentages or can be scaled
+                                        ></div>
+                                    </div>
+                                    <span className="ml-2 text-sm">{(value as number).toFixed(2)}%</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
                     <pre className="bg-black bg-opacity-20 p-2 rounded whitespace-pre-wrap">
                         {JSON.stringify(recipes, null, 2)}
                     </pre>
