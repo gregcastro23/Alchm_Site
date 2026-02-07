@@ -1,0 +1,35 @@
+{
+  "files": {
+    "main.css": "/Alchm_Site/static/css/main.2ab65ba2.css",
+    "main.js": "/Alchm_Site/static/js/main.f3893e85.js",
+    "static/media/background1.png": "/Alchm_Site/static/media/background1.4b2a06e21022aec51bd2.png",
+    "static/media/allLocationsUSfirst.csv": "/Alchm_Site/static/media/allLocationsUSfirst.e8fb23c18d5751e74863.csv",
+    "static/media/about1.png": "/Alchm_Site/static/media/about1.adc7a193cc26ee49eec5.png",
+    "static/media/about2.png": "/Alchm_Site/static/media/about2.8d89dda63bfa84b06cef.png",
+    "static/media/team1.png": "/Alchm_Site/static/media/team1.18edc34ac4890d32ffa9.png",
+    "static/media/about3.png": "/Alchm_Site/static/media/about3.30dae09653883178552b.png",
+    "static/media/logo.png": "/Alchm_Site/static/media/logo.d4712fc8ae7e35653363.png",
+    "static/media/about4.png": "/Alchm_Site/static/media/about4.2e0db6e6d555d29dabd7.png",
+    "static/media/Sequel100Black-65.ttf": "/Alchm_Site/static/media/Sequel100Black-65.e4003b0d2f58a56e1166.ttf",
+    "static/media/Sequel100Black-45.ttf": "/Alchm_Site/static/media/Sequel100Black-45.02ab319b0eed5c5c6406.ttf",
+    "static/media/axios.cjs": "/Alchm_Site/static/media/axios.250e0daceb0cf2e5e88d.cjs",
+    "static/media/team2.png": "/Alchm_Site/static/media/team2.ad79fc7624b82553f1d0.png",
+    "static/media/OpenSea.svg": "/Alchm_Site/static/media/OpenSea.7e1f5eac5f6060ea76ab231327056371.svg",
+    "static/media/Discord.svg": "/Alchm_Site/static/media/Discord.04097318e7fae6b6d226488b3aefe17f.svg",
+    "static/media/Roadmap3.svg": "/Alchm_Site/static/media/Roadmap3.b28910b276acddc66de737bf53c71119.svg",
+    "static/media/Roadmap2.svg": "/Alchm_Site/static/media/Roadmap2.225d0cec97a9397f820723c931033429.svg",
+    "static/media/Instagram.svg": "/Alchm_Site/static/media/Instagram.658cb6a0b3d06aff0b2fc08458a76ab5.svg",
+    "index.html": "/Alchm_Site/index.html",
+    "static/media/Twitter.svg": "/Alchm_Site/static/media/Twitter.44e4a7358de1c288b3d044b826dcf6d0.svg",
+    "static/media/Plus.svg": "/Alchm_Site/static/media/Plus.c77eb961287e60dc1b9293c7f0302e51.svg",
+    "static/media/Roadmap4.svg": "/Alchm_Site/static/media/Roadmap4.ddc151a0c30c0037b676c808346da25a.svg",
+    "static/media/Roadmap1.svg": "/Alchm_Site/static/media/Roadmap1.dc3eb7a50c7dd0308b8560bedb5f5454.svg",
+    "static/media/Minus.svg": "/Alchm_Site/static/media/Minus.ddbdf9a93d5134321bce2d8aedd98fa8.svg",
+    "main.2ab65ba2.css.map": "/Alchm_Site/static/css/main.2ab65ba2.css.map",
+    "main.f3893e85.js.map": "/Alchm_Site/static/js/main.f3893e85.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.2ab65ba2.css",
+    "static/js/main.f3893e85.js"
+  ]
+}
