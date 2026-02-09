@@ -1,5 +1,18 @@
 // src/services/astrologyApi.ts
 
+import { SignJWT } from 'jose';
+
+// Dynamic API URL based on environment
+const BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://api.alchm.kitchen' // Placeholder for Vercel deployment URL
+  : 'http://192.168.0.129:8001'; // Local Mac Mini node
+
+// JWT Secret - IMPORTANT: In a real application, this should be securely loaded from an environment variable.
+// For development and demonstration, a hardcoded string is used.
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'your-secret-key-that-is-at-least-32-bytes-long' // Fallback for dev
+);
+
 interface BirthData {
   year: number;
   month: number;
@@ -22,9 +35,24 @@ export interface Recipe {
   description?: string; // Recipe description
   alchemical_quantities: AlchemicalQuantities;
   totalPotencyScore: number;
+  sodium: number; // New metric for 6-metric grid
+  fiber: number;  // New metric for 6-metric grid
   // TODO: Add other relevant fields from the API response for a complete recipe object
 }
 
+// Function to generate auth headers with a JWT
+const getAuthHeaders = async () => {
+  const token = await new SignJWT({ 'urn:example:claim': true })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('2h') // Token expires in 2 hours
+    .sign(JWT_SECRET);
+
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+  };
+};
 
 // Simple in-memory circuit breaker
 const circuitBreaker = {
@@ -74,17 +102,17 @@ export const fetchAstrologicalRecipes = async (birthData: BirthData) => {
     }
   }
 
-  const API_URL = 'http://192.168.0.129:8001/api/astrological/recipe-recommendations-by-chart';
+  const API_ENDPOINT = '/api/astrological/recipe-recommendations-by-chart';
+  const API_URL = `${BASE_URL}${API_ENDPOINT}`;
 
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
+    const authHeaders = await getAuthHeaders();
 
     const response = await fetch(API_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: authHeaders, // Use dynamically generated auth headers
       body: JSON.stringify(birthData),
       signal: controller.signal,
     });
@@ -133,6 +161,8 @@ export const mockFetchAstrologicalRecipes = async (birthData: BirthData) => {
       substance: 16.50, // Example value
     },
     totalPotencyScore: 175.00, // Representing 1.75x, so 175% for display purposes if capped at 100
+    sodium: 120, // Example sodium value
+    fiber: 25,  // Example fiber value
   };
 
   return { isError: false, data: mockResponse };

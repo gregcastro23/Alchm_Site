@@ -1,6 +1,8 @@
 // src/components/CosmicRecipeWidget.tsx
+"use client";
 import React, { useState, useEffect, useCallback } from 'react';
 import { fetchAstrologicalRecipes, resetCircuitBreaker, Recipe } from '../services/astrologyApi';
+import { celestialConfig } from '../config/celestialConfig'; // Import celestialConfig
 
 interface SavedChartData {
   year: number;
@@ -84,6 +86,25 @@ const getChaldeanPlanetaryHour = () => {
   return planetaryOrder[rulerIndex];
 };
 
+// New helper function to determine elemental requirement based on planetary hour
+const getElementalRequirement = (planetaryHour: string) => {
+  switch (planetaryHour) {
+    case 'Sun':
+    case 'Mars':
+      return { element: 'Fire', sodiumThreshold: 150, fiberThreshold: 20 };
+    case 'Moon':
+    case 'Venus':
+      return { element: 'Water', sodiumThreshold: 100, fiberThreshold: 30 };
+    case 'Jupiter':
+      return { element: 'Air', sodiumThreshold: 120, fiberThreshold: 25 };
+    case 'Saturn':
+    case 'Mercury':
+      return { element: 'Earth', sodiumThreshold: 80, fiberThreshold: 35 };
+    default:
+      return { element: 'None', sodiumThreshold: 0, fiberThreshold: 0 };
+  }
+};
+
 
 interface CosmicRecipeWidgetProps {
   savedChart?: SavedChartData;
@@ -94,15 +115,14 @@ const CosmicRecipeWidget: React.FC<CosmicRecipeWidgetProps> = ({ savedChart }) =
         if (savedChart) {
             return savedChart;
         }
-        const savedLat = localStorage.getItem('userLatitude');
-        const savedLon = localStorage.getItem('userLongitude');
+        // Use celestialConfig for default values
         return {
-            year: 2000,
-            month: 1,
-            day: 1,
-            time: '12:00',
-            latitude: savedLat ? parseFloat(savedLat) : 34.0522,
-            longitude: savedLon ? parseFloat(savedLon) : -118.2437,
+            year: celestialConfig.defaultBirthChart.year,
+            month: celestialConfig.defaultBirthChart.month,
+            day: celestialConfig.defaultBirthChart.day,
+            time: '12:00', // Default time can remain hardcoded or moved to config if needed
+            latitude: celestialConfig.forestHillsCoordinates.latitude,
+            longitude: celestialConfig.forestHillsCoordinates.longitude,
         };
     });
     const [recipes, setRecipes] = useState<Recipe | null>(null);
@@ -229,21 +249,9 @@ const CosmicRecipeWidget: React.FC<CosmicRecipeWidgetProps> = ({ savedChart }) =
                         <p className="text-amber-300 text-2xl">{getChaldeanPlanetaryHour()}</p>
                     </div>
 
-                    {/* Potency Meter */}
+                    {/* Elemental Requirements and SMES */}
                     <div className="mb-4">
-                        <p className="text-lg font-bold">Total Potency Score:</p>
-                        <div className="w-full bg-gray-700 rounded-full h-4 mb-2">
-                            <div
-                                className={`bg-amber-400 h-4 rounded-full ${recipes.totalPotencyScore > 150 ? 'shadow-glow' : ''}`} // Assuming 'shadow-glow' is a defined CSS class
-                                style={{ width: `${Math.min(recipes.totalPotencyScore, 100)}%` }} // Cap at 100% for display
-                            ></div>
-                        </div>
-                        <p className="text-sm text-right">{recipes.totalPotencyScore.toFixed(2)}%</p>
-                    </div>
-
-                    {/* Elemental Balance Bar */}
-                    <div className="mb-4">
-                        <p className="text-lg font-bold">Alchemical Quantities:</p>
+                        <p className="text-lg font-bold">Alchemical Quantities (SMES):</p>
                         <div className="flex flex-col space-y-1">
                             {Object.entries(recipes.alchemical_quantities).map(([key, value]) => (
                                 <div key={key} className="flex items-center">
@@ -251,13 +259,58 @@ const CosmicRecipeWidget: React.FC<CosmicRecipeWidgetProps> = ({ savedChart }) =
                                     <div className="flex-grow bg-gray-700 rounded-full h-3">
                                         <div
                                             className="bg-purple-400 h-3 rounded-full"
-                                            style={{ width: `${Math.min(value as number, 100)}%` }} // Assuming values are percentages or can be scaled
+                                            style={{ width: `${Math.min(value as number, 100)}%` }}
                                         ></div>
                                     </div>
                                     <span className="ml-2 text-sm">{(value as number).toFixed(2)}%</span>
                                 </div>
                             ))}
                         </div>
+                    </div>
+
+                    {/* 6-Metric Grid: Sodium and Fiber */}
+                    <div className="mb-4">
+                        <p className="text-lg font-bold">6-Metric Grid (Sodium & Fiber):</p>
+                        {(() => {
+                            const currentPlanetaryHourRuler = getChaldeanPlanetaryHour();
+                            const elementalReq = getElementalRequirement(currentPlanetaryHourRuler);
+
+                            const isSodiumAligned = recipes.sodium >= elementalReq.sodiumThreshold * 0.9 && recipes.sodium <= elementalReq.sodiumThreshold * 1.1;
+                            const isFiberAligned = recipes.fiber >= elementalReq.fiberThreshold * 0.9 && recipes.fiber <= elementalReq.fiberThreshold * 1.1;
+
+                            const sodiumGlowClass = isSodiumAligned ? 'shadow-lg shadow-amber-500/50 animate-pulse' : '';
+                            const fiberGlowClass = isFiberAligned ? 'shadow-lg shadow-emerald-500/50 animate-pulse' : '';
+
+                            return (
+                                <div className="space-y-2">
+                                    <div className={`flex items-center p-2 rounded ${sodiumGlowClass}`}>
+                                        <span className="w-24">Sodium:</span>
+                                        <span className="flex-grow text-right">{recipes.sodium}mg</span>
+                                    </div>
+                                    <div className={`flex items-center p-2 rounded ${fiberGlowClass}`}>
+                                        <span className="w-24">Fiber:</span>
+                                        <span className="flex-grow text-right">{recipes.fiber}g</span>
+                                    </div>
+                                    {elementalReq.element !== 'None' && (
+                                        <p className="text-sm text-amber-200">
+                                            Current Elemental Requirement ({elementalReq.element}): Sodium ~{elementalReq.sodiumThreshold}mg, Fiber ~{elementalReq.fiberThreshold}g
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        })()}
+                    </div>
+
+                    {/* Potency Meter */}
+                    <div className="mb-4">
+                        <p className="text-lg font-bold">Total Potency Score:</p>
+                        <div className="w-full bg-gray-700 rounded-full h-4 mb-2">
+                            <div
+                                className={`bg-amber-400 h-4 rounded-full ${recipes.totalPotencyScore > 150 ? 'shadow-glow' : ''}`}
+                                style={{ width: `${Math.min(recipes.totalPotencyScore, 100)}%` }}
+                            ></div>
+                        </div>
+                        <p className="text-sm text-right">{recipes.totalPotencyScore.toFixed(2)}%</p>
                     </div>
 
                     <pre className="bg-black bg-opacity-20 p-2 rounded whitespace-pre-wrap">
